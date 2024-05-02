@@ -77,12 +77,12 @@ const getAllBooksHandler = (request, h) => {
         publisher: book.publisher
     }));
 
-    return {
+    return h.response( {
         status: 'success',
         data: {
             books: simplifiedBooks,
         },
-    };
+    });
 };
 
 // Kriteria 5: API dapat menampilkan detail buku.
