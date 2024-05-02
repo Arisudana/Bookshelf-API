@@ -5,6 +5,24 @@ const books = require('./books');
 const addBookHandler = (request, h) => {
     const {name, year, author, summary, publisher, pageCount, readPage, reading} = request.payload;
 
+    if(name === undefined){
+        const response = h.response({
+            status: 'fail',
+            message: 'Gagal menambahkan buku. Mohon isi nama buku',
+        });
+        response.code(400);
+        return response;
+    }
+
+    if(readPage > pageCount){
+        const response = h.response({
+            status: 'fail',
+            message: 'Gagal menambahkan buku. readPage tidak boleh lebih besar dari pageCount',
+        });
+        response.code(400);
+        return response;
+    }
+
     const id = nanoid(16);
     const insertedAt = new Date().toISOString();
     const updatedAt = insertedAt;
@@ -28,33 +46,44 @@ const addBookHandler = (request, h) => {
         response.code(201);
         return response;
     }
-
-    if(name === undefined){
-        const response = h.response({
-            status: 'fail',
-            message: 'Gagal menambahkan buku. Mohon isi nama buku',
-        });
-        response.code(400);
-        return response;
-    }
-
-    if(readPage > pageCount){
-        const response = h.response({
-            status: 'fail',
-            message: 'Gagal menambahkan buku. readPage tidak boleh lebih besar dari pageCount',
-        });
-        response.code(400);
-        return response;
-    }
 };
 
 // Kriteria 4: API dapat menampilkan seluruh buku.
-const getAllBooksHandler = () => ({
-    status: 'success',
-    data: {
-        books,
-    },
-});
+const getAllBooksHandler = (request, h) => {
+    let filteredBooks = [...books];
+
+    // Opsional 1: Filter berdasarkan query name
+    if (request.query.name) {
+        const keyword = request.query.name.toLowerCase();
+        filteredBooks = filteredBooks.filter(book => book.name.toLowerCase().includes(keyword));
+    }
+
+    // Opsional 2: Filter berdasarkan query reading
+    if (request.query.reading !== undefined) {
+        const readingStatus = request.query.reading === '1';
+        filteredBooks = filteredBooks.filter(book => book.reading === readingStatus);
+    }
+
+    // Opsional 3: Filter berdasarkan query finished
+    if (request.query.finished !== undefined) {
+        const finishedStatus = request.query.finished === '1';
+        filteredBooks = filteredBooks.filter(book => book.finished === finishedStatus);
+    }
+
+    // Mengambil properti id, name, dan publisher
+    const simplifiedBooks = filteredBooks.map(book => ({
+        id: book.id,
+        name: book.name,
+        publisher: book.publisher
+    }));
+
+    return {
+        status: 'success',
+        data: {
+            books: simplifiedBooks,
+        },
+    };
+};
 
 // Kriteria 5: API dapat menampilkan detail buku.
 const getBookByIdHandler = (request, h) => {
